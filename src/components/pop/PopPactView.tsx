@@ -61,12 +61,25 @@ export function PopPactView(props: Props) {
       <div className="ff-card relative overflow-hidden">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-[2.35rem] font-black leading-[0.95] tracking-tight text-cream">
-              {props.days} day{props.days === 1 ? '' : 's'}
-              <br />
-              <span className="text-lime">pop-free!</span>
-            </h2>
-            <p className="mt-2 text-xs font-semibold text-slate">Since {props.startLabel}</p>
+            {props.days > 0 ? (
+              <>
+                <h2 className="text-[2.35rem] font-black leading-[0.95] tracking-tight text-cream">
+                  {props.days} day{props.days === 1 ? '' : 's'}
+                  <br />
+                  <span className="text-lime">pop-free!</span>
+                </h2>
+                <p className="mt-2 text-xs font-semibold text-slate">Since {props.startLabel}</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-[2.1rem] font-black leading-[0.95] tracking-tight text-cream">
+                  The deal
+                  <br />
+                  <span className="text-lime">starts {props.startLabel}</span>
+                </h2>
+                <p className="mt-2 text-xs font-semibold text-slate">Day 1 is waiting for you.</p>
+              </>
+            )}
           </div>
           <PopGoblin size={86} mood="defeated" />
         </div>

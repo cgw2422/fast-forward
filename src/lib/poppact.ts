@@ -19,16 +19,21 @@ export const POP_PACT_DEFAULT_REASONS = [
 /**
  * Day 1 is the start day itself — Sep 6 2026 reads as "1 day pop-free", which is
  * how a person counts it, not zero-indexed like a computer would.
+ * Returns 0 while the start date is still in the future.
  */
 export function streakDays(pact: Pick<PopPact, 'streakStart'>, timezone: string): number {
-  const today = todayKey(timezone);
-  const diff = daysBetween(pact.streakStart, today);
-  return Math.max(0, diff) + 1;
+  const diff = daysBetween(pact.streakStart, todayKey(timezone));
+  return diff < 0 ? 0 : diff + 1;
 }
 
 export function totalDaysSinceStart(pact: Pick<PopPact, 'startDate'>, timezone: string): number {
-  const today = todayKey(timezone);
-  return Math.max(0, daysBetween(pact.startDate, today)) + 1;
+  const diff = daysBetween(pact.startDate, todayKey(timezone));
+  return diff < 0 ? 0 : diff + 1;
+}
+
+/** True when the pact is scheduled but hasn't begun yet. */
+export function isPending(pact: Pick<PopPact, 'startDate'>, timezone: string): boolean {
+  return daysBetween(pact.startDate, todayKey(timezone)) < 0;
 }
 
 export function nextMilestone(days: number): { days: number; label: string } | null {

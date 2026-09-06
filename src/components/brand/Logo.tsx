@@ -7,11 +7,12 @@ export function LogoMark({ size = 44 }: { size?: number }) {
 
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
-    <div className={`select-none leading-[0.86] ${className}`}>
-      <div className="text-[2.6rem] font-black italic tracking-tight text-cream">FAST</div>
-      <div className="text-[2.6rem] font-black italic tracking-tight text-lime">
+    // Scales with the viewport so "FORWARD" never runs off a narrow phone.
+    <div className={`select-none leading-[0.88] ${className}`}>
+      <div className="text-[clamp(1.9rem,9vw,2.5rem)] font-black italic tracking-tight text-cream">FAST</div>
+      <div className="text-[clamp(1.9rem,9vw,2.5rem)] font-black italic tracking-tight text-lime">
         FORWARD
-        <span className="align-super text-[0.6rem] not-italic tracking-normal text-slate">™</span>
+        <span className="align-super text-[0.55rem] not-italic tracking-normal text-slate">™</span>
       </div>
     </div>
   );

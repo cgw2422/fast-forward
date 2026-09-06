@@ -169,10 +169,27 @@ export function TodayCards({
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <div className="ff-label text-coral">The Pop Pact</div>
-              <div className="ff-metric">
-                {snapshot.popStreakDays} day{snapshot.popStreakDays === 1 ? '' : 's'} pop-free
-              </div>
-              <p className="mt-0.5 text-xs text-slate">{POP_COPY.keepingPromise}</p>
+              {snapshot.popStreakDays > 0 ? (
+                <>
+                  <div className="ff-metric">
+                    {snapshot.popStreakDays} day{snapshot.popStreakDays === 1 ? '' : 's'} pop-free
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate">{POP_COPY.keepingPromise}</p>
+                </>
+              ) : (
+                <>
+                  <div className="ff-metric text-cream/70">Starts soon</div>
+                  <p className="mt-0.5 text-xs text-slate">
+                    {snapshot.popStartIso
+                      ? `Day 1 is ${new Date(snapshot.popStartIso).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          timeZone: 'UTC',
+                        })}`
+                      : POP_COPY.keepingPromise}
+                  </p>
+                </>
+              )}
             </div>
             <PopGoblin size={54} mood="smug" />
           </div>

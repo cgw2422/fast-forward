@@ -48,8 +48,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-6 pb-10 pt-14">
       <div className="animate-fade-up">
         <div className="flex items-center gap-3">
-          <LogoMark size={52} />
-          <Wordmark />
+          <LogoMark size={48} />
+          <Wordmark className="min-w-0 flex-1" />
         </div>
         <Tagline className="mt-4" />
 

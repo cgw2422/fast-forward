@@ -198,13 +198,27 @@ export function HabitsView({ habits, todayIndex }: { habits: Habit[]; todayIndex
                     {habit.identityStatement ? (
                       <p className="mt-0.5 text-[11px] italic text-slate">&ldquo;{habit.identityStatement}&rdquo;</p>
                     ) : null}
-                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate">
-                      {habit.goalLabel ? <span>Goal: {habit.goalLabel}</span> : null}
-                      {habit.tinyGoalLabel ? <span className="text-lime/80">Tiny: {habit.tinyGoalLabel}</span> : null}
-                      <span>{habit.reps30} in 30d</span>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {habit.goalLabel ? (
+                        <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-slate">
+                          {habit.goalLabel}
+                        </span>
+                      ) : null}
+                      {habit.tinyGoalLabel ? (
+                        <span className="rounded-md bg-lime/10 px-2 py-0.5 text-[10px] font-semibold text-lime/90">
+                          Tiny: {habit.tinyGoalLabel}
+                        </span>
+                      ) : null}
+                      <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-slate">
+                        {habit.reps30}× in 30d
+                      </span>
                     </div>
-                    {habit.cue ? <p className="mt-1 text-[11px] text-slate/80">Cue: {habit.cue}</p> : null}
-                    {habit.stack ? <p className="mt-0.5 text-[11px] text-slate/80">Stack: {habit.stack}</p> : null}
+                    {habit.cue || habit.stack ? (
+                      <div className="mt-2 space-y-0.5 border-t border-white/[0.05] pt-2">
+                        {habit.cue ? <p className="text-[11px] text-slate/80">Cue: {habit.cue}</p> : null}
+                        {habit.stack ? <p className="text-[11px] text-slate/80">Stack: {habit.stack}</p> : null}
+                      </div>
+                    ) : null}
                   </button>
                 </div>
 

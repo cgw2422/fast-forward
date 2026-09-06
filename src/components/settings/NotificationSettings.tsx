@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SettingsGroup, Toggle, SelectRow, InputRow, SegmentedRow, Row } from './Controls';
+import { SettingsGroup, Toggle, SelectRow, SegmentedRow, Row, TimeRangeRow, TimeRow } from './Controls';
 import { useToast } from '@/components/ui/Toast';
 import { enablePush, disablePush, inspectPushSupport, type PushSupport } from '@/lib/push-client';
 import { NAG_LEVELS, PERSONALITIES, waterReminderBody, type NagLevel, type Personality } from '@/lib/copy';
@@ -175,28 +175,13 @@ export function NotificationSettings({
             options={[30, 45, 60, 90, 120, 180].map((m) => ({ value: String(m), label: `${m} minutes` }))}
             onChange={(v) => patch({ waterIntervalMinutes: Number(v) })}
           />
-          <Row>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-cream">Between</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="time"
-                aria-label="Water window start"
-                value={settings.waterWindowStart}
-                onChange={(e) => patch({ waterWindowStart: e.target.value })}
-                className="rounded-lg border border-white/10 bg-midnight px-2.5 py-2 text-sm font-semibold text-cream"
-              />
-              <span className="text-slate">–</span>
-              <input
-                type="time"
-                aria-label="Water window end"
-                value={settings.waterWindowEnd}
-                onChange={(e) => patch({ waterWindowEnd: e.target.value })}
-                className="rounded-lg border border-white/10 bg-midnight px-2.5 py-2 text-sm font-semibold text-cream"
-              />
-            </div>
-          </Row>
+          <TimeRangeRow
+            label="Between"
+            start={settings.waterWindowStart}
+            end={settings.waterWindowEnd}
+            onStartChange={(v) => patch({ waterWindowStart: v })}
+            onEndChange={(v) => patch({ waterWindowEnd: v })}
+          />
           <SelectRow
             label="Only if no water logged"
             hint="Reminders count from your last drink, not the clock."
@@ -219,16 +204,7 @@ export function NotificationSettings({
       {category === 'Pop' || category === 'All' ? (
         <SettingsGroup title="Pop Pact">
           <Toggle label="Daily streak reminder" checked={settings.popEnabled} onChange={(v) => patch({ popEnabled: v })} />
-          <Row>
-            <div className="flex-1 text-sm font-semibold text-cream">Time</div>
-            <input
-              type="time"
-              aria-label="Pop Pact reminder time"
-              value={settings.popTime}
-              onChange={(e) => patch({ popTime: e.target.value })}
-              className="rounded-lg border border-white/10 bg-midnight px-3 py-2 text-sm font-semibold text-cream"
-            />
-          </Row>
+          <TimeRow label="Time" value={settings.popTime} onChange={(v) => patch({ popTime: v })} />
         </SettingsGroup>
       ) : null}
 
@@ -240,16 +216,7 @@ export function NotificationSettings({
             checked={settings.moveEnabled}
             onChange={(v) => patch({ moveEnabled: v })}
           />
-          <Row>
-            <div className="flex-1 text-sm font-semibold text-cream">Time</div>
-            <input
-              type="time"
-              aria-label="Movement reminder time"
-              value={settings.moveTime}
-              onChange={(e) => patch({ moveTime: e.target.value })}
-              className="rounded-lg border border-white/10 bg-midnight px-3 py-2 text-sm font-semibold text-cream"
-            />
-          </Row>
+          <TimeRow label="Time" value={settings.moveTime} onChange={(v) => patch({ moveTime: v })} />
         </SettingsGroup>
       ) : null}
 
@@ -276,39 +243,22 @@ export function NotificationSettings({
               checked={settings.eveningCheckEnabled}
               onChange={(v) => patch({ eveningCheckEnabled: v })}
             />
-            <Row>
-              <div className="flex-1 text-sm font-semibold text-cream">Time</div>
-              <input
-                type="time"
-                aria-label="Evening check time"
-                value={settings.eveningCheckTime}
-                onChange={(e) => patch({ eveningCheckTime: e.target.value })}
-                className="rounded-lg border border-white/10 bg-midnight px-3 py-2 text-sm font-semibold text-cream"
-              />
-            </Row>
+            <TimeRow
+              label="Time"
+              value={settings.eveningCheckTime}
+              onChange={(v) => patch({ eveningCheckTime: v })}
+            />
           </SettingsGroup>
 
           <SettingsGroup title="Quiet Hours">
-            <Row>
-              <div className="flex-1 text-sm font-semibold text-cream">No notifications between</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="time"
-                  aria-label="Quiet hours start"
-                  value={settings.quietStart}
-                  onChange={(e) => patch({ quietStart: e.target.value })}
-                  className="rounded-lg border border-white/10 bg-midnight px-2.5 py-2 text-sm font-semibold text-cream"
-                />
-                <span className="text-slate">–</span>
-                <input
-                  type="time"
-                  aria-label="Quiet hours end"
-                  value={settings.quietEnd}
-                  onChange={(e) => patch({ quietEnd: e.target.value })}
-                  className="rounded-lg border border-white/10 bg-midnight px-2.5 py-2 text-sm font-semibold text-cream"
-                />
-              </div>
-            </Row>
+            <TimeRangeRow
+              label="No notifications between"
+              hint="Fast milestones are recorded either way — they just stay silent."
+              start={settings.quietStart}
+              end={settings.quietEnd}
+              onStartChange={(v) => patch({ quietStart: v })}
+              onEndChange={(v) => patch({ quietEnd: v })}
+            />
           </SettingsGroup>
         </>
       ) : null}

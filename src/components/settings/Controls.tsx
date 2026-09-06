@@ -162,3 +162,71 @@ export function SegmentedRow({
     </div>
   );
 }
+
+export function TimeRangeRow({
+  label,
+  hint,
+  start,
+  end,
+  onStartChange,
+  onEndChange,
+}: {
+  label: string;
+  hint?: string;
+  start: string;
+  end: string;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+}) {
+  return (
+    <div className="border-b border-white/[0.05] px-4 py-3 last:border-0">
+      <div className="text-sm font-semibold text-cream">{label}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-slate">{hint}</div> : null}
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="time"
+          aria-label={`${label} start`}
+          value={start}
+          onChange={(e) => onStartChange(e.target.value)}
+          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-midnight px-3 py-2 text-sm font-semibold text-cream outline-none focus:border-lime/60"
+        />
+        <span className="shrink-0 text-slate">to</span>
+        <input
+          type="time"
+          aria-label={`${label} end`}
+          value={end}
+          onChange={(e) => onEndChange(e.target.value)}
+          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-midnight px-3 py-2 text-sm font-semibold text-cream outline-none focus:border-lime/60"
+        />
+      </div>
+    </div>
+  );
+}
+
+export function TimeRow({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Row>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-cream">{label}</div>
+        {hint ? <div className="mt-0.5 text-[11px] text-slate">{hint}</div> : null}
+      </div>
+      <input
+        type="time"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="shrink-0 rounded-lg border border-white/10 bg-midnight px-3 py-2 text-sm font-semibold text-cream outline-none focus:border-lime/60"
+      />
+    </Row>
+  );
+}
