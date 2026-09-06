@@ -41,6 +41,7 @@ export default async function NotificationSettingsPage() {
           moveTime: pref.moveTime,
           fastMilestonesEnabled: pref.fastMilestonesEnabled,
           habitStackEnabled: pref.habitStackEnabled,
+          familyMessagesEnabled: pref.familyMessagesEnabled,
           eveningCheckEnabled: pref.eveningCheckEnabled,
           eveningCheckTime: pref.eveningCheckTime,
         }}

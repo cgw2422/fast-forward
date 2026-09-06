@@ -32,9 +32,9 @@ type Snapshot = {
 const QUICK_CHEERS = [
   'Proud of you. Keep going ❤️',
   "You've got this!",
-  'Come play basketball with me later!',
   'Way to keep the promise.',
   'Saw your walk today — nice work.',
+  'Thinking about you today.',
 ];
 
 export function FamilyDashboard({

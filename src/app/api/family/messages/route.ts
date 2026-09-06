@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/auth';
 import { requireOwnerUser, resolveAccess, NotFoundError } from '@/lib/authz';
 import { handler, fail } from '@/lib/api';
+import { sendOnce } from '@/lib/push';
 
 const MAX_LENGTH = 500;
 
@@ -28,9 +29,28 @@ export async function POST(request: Request) {
     const scope = await resolveAccess(sender.id, ownerId);
     if (!scope || scope.role === 'OWNER') throw new NotFoundError();
 
+    const trimmed = body.trim();
     const message = await prisma.familyMessage.create({
-      data: { ownerId, senderId: sender.id, body: body.trim() },
+      data: { ownerId, senderId: sender.id, body: trimmed },
     });
+
+    // Notify the owner right away. Deliberately not held for quiet hours: this
+    // is a person reaching out, not the app nagging, and it is rare by nature.
+    // Owners can switch it off entirely in notification settings.
+    const pref = await prisma.notificationPreference.findUnique({ where: { userId: ownerId } });
+    if (pref?.enabled && pref.familyMessagesEnabled) {
+      const firstName = sender.name.split(' ')[0];
+      await sendOnce(ownerId, `family_message:${message.id}`, {
+        kind: 'family_message',
+        title: `${firstName} sent you a message`,
+        // Long messages get trimmed for the notification shade.
+        body: trimmed.length > 160 ? `${trimmed.slice(0, 157)}…` : trimmed,
+        url: '/family-messages',
+        tag: 'ff-family-message',
+        renotify: true,
+      });
+    }
+
     return { ok: true, messageId: message.id };
   });
 }

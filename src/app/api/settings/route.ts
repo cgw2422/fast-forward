@@ -25,6 +25,7 @@ const notificationSchema = z.object({
   moveTime: hhmm.optional(),
   fastMilestonesEnabled: z.boolean().optional(),
   habitStackEnabled: z.boolean().optional(),
+  familyMessagesEnabled: z.boolean().optional(),
   eveningCheckEnabled: z.boolean().optional(),
   eveningCheckTime: hhmm.optional(),
 });

@@ -653,6 +653,10 @@ model NotificationPreference {
   fastMilestonesEnabled Boolean @default(true)
   habitStackEnabled     Boolean @default(true)
 
+  /// Encouragement from family. Sent the moment it arrives — a person reaching
+  /// out is not the app nagging, so it is not held for quiet hours.
+  familyMessagesEnabled Boolean @default(true)
+
   eveningCheckEnabled Boolean @default(true)
   eveningCheckTime    String  @default("21:00")
 

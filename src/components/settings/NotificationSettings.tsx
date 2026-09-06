@@ -25,6 +25,7 @@ type Settings = {
   moveTime: string;
   fastMilestonesEnabled: boolean;
   habitStackEnabled: boolean;
+  familyMessagesEnabled: boolean;
   eveningCheckEnabled: boolean;
   eveningCheckTime: string;
 };
@@ -234,6 +235,15 @@ export function NotificationSettings({
               hint="&ldquo;You did Part 1. Finish the stack.&rdquo;"
               checked={settings.habitStackEnabled}
               onChange={(v) => patch({ habitStackEnabled: v })}
+            />
+          </SettingsGroup>
+
+          <SettingsGroup title="Family">
+            <Toggle
+              label="Family messages"
+              hint="Sent as soon as they arrive, including during quiet hours."
+              checked={settings.familyMessagesEnabled}
+              onChange={(v) => patch({ familyMessagesEnabled: v })}
             />
           </SettingsGroup>
 
