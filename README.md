@@ -35,57 +35,55 @@ Single deployable Railway service. The reminder scheduler runs in-process.
 
 ## Deploying to Railway
 
+**The app configures itself.** On first boot it generates its own push keypair
+and session signing secret and stores them in the database, so the only
+variable you have to set is `DATABASE_URL`. No terminal required — the whole
+deploy can be done from a phone browser.
+
 **1. Create the project**
 
-Push this repo to GitHub, then in Railway: *New Project → Deploy from GitHub repo*.
+Railway → *New Project* → *Deploy from GitHub repo* → pick this repo.
+Under *Settings → Source*, set the branch you want to deploy.
 
 **2. Add PostgreSQL**
 
-*New → Database → PostgreSQL*. Railway sets `DATABASE_URL` automatically —
-reference it from the app service with `${{Postgres.DATABASE_URL}}`.
+*New → Database → PostgreSQL* in the same project.
 
-**3. Generate VAPID keys**
+**3. Point the app at the database**
 
-Locally:
+On the app service, *Variables* → add:
 
-```bash
-npm install
-npm run genkeys
+```
+DATABASE_URL = ${{Postgres.DATABASE_URL}}
 ```
 
-That prints three values. Paste all three into Railway.
+**4. Generate a domain**
 
-**4. Set environment variables**
+*Settings → Networking → Generate Domain*.
 
-| Variable | Notes |
+That's it. `npm run start` syncs the schema and boots. Visit `/signup` to
+create your account — water containers, fasting presets, starter Tiny Wins and
+the Pop Pact are all seeded automatically.
+
+### Optional variables
+
+| Variable | Why you'd set it |
 |---|---|
-| `DATABASE_URL` | From the Postgres service |
-| `SESSION_SECRET` | `openssl rand -base64 48` |
-| `VAPID_PUBLIC_KEY` | From `npm run genkeys` |
-| `VAPID_PRIVATE_KEY` | From `npm run genkeys` |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Same value as the public key |
-| `VAPID_SUBJECT` | `mailto:you@example.com` |
-| `CRON_SECRET` | Any long random string |
-| `ENABLE_IN_PROCESS_CRON` | `true` |
-| `APP_URL` | Your Railway URL |
+| `VAPID_SUBJECT` | `mailto:you@example.com` — the contact address on your push messages |
+| `SESSION_SECRET` | Supply your own signing secret instead of the generated one |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Supply your own push keys (`npm run genkeys`) |
+| `ENABLE_IN_PROCESS_CRON` | `false` to run reminders from Railway Cron instead |
+| `CRON_SECRET` | Required if you use the external cron endpoint |
 
-**5. Deploy**
+Generated secrets live in the `AppConfig` table and persist across redeploys,
+so you stay signed in and your push subscriptions keep working. Setting the
+matching environment variable always overrides the stored value.
 
-`npm run start` syncs the schema and boots the server. Generate a public domain
-under *Settings → Networking*.
-
-**6. Create your account**
-
-Visit `/signup`. Everything is seeded on first sign-in: water containers,
-fasting presets, starter Tiny Wins, and the Pop Pact.
-
-To seed from the CLI instead:
+Seeding from a terminal, if you ever want to:
 
 ```bash
 SEED_EMAIL=you@example.com SEED_PASSWORD=... SEED_NAME=... npm run db:seed
 ```
-
----
 
 ## Install it on your phone
 

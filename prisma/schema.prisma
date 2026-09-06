@@ -711,3 +711,12 @@ model TimelineEvent {
   @@index([userId, occurredAt])
   @@index([type, refId])
 }
+
+/// Runtime-generated configuration (VAPID keypair, session secret) so a fresh
+/// deploy can configure itself without anyone running a terminal command.
+/// Environment variables, when set, always take precedence over these rows.
+model AppConfig {
+  key       String   @id
+  value     String
+  createdAt DateTime @default(now())
+}

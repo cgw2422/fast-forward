@@ -91,7 +91,7 @@ export type TickResult = { checked: number; sent: number; details: string[] };
  */
 export async function runReminderTick(now = new Date()): Promise<TickResult> {
   const result: TickResult = { checked: 0, sent: 0, details: [] };
-  if (!pushConfigured()) {
+  if (!(await pushConfigured())) {
     result.details.push('VAPID keys not configured — skipping.');
     return result;
   }

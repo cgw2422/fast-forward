@@ -5,8 +5,8 @@ import { sendToUser, pushConfigured } from '@/lib/push';
 export async function POST() {
   return handler(async () => {
     const user = await requireUser();
-    if (!pushConfigured()) {
-      throw new Error('Push is not configured on the server (missing VAPID keys)');
+    if (!(await pushConfigured())) {
+      throw new Error('Push keys are unavailable — check the database connection');
     }
     const delivered = await sendToUser(user.id, {
       title: 'FAST FORWARD',

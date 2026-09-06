@@ -5,7 +5,20 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
-  if (process.env.ENABLE_IN_PROCESS_CRON !== 'true') return;
+
+  // Generates the push keypair and session secret on first boot so a fresh
+  // deploy needs no manual key generation.
+  try {
+    const { ensureRuntimeConfig } = await import('@/lib/runtime-config');
+    await ensureRuntimeConfig();
+  } catch (error) {
+    console.error('[config] could not prepare runtime config', error);
+  }
+
+  if (process.env.ENABLE_IN_PROCESS_CRON === 'false') {
+    console.log('[reminders] in-process scheduler disabled (ENABLE_IN_PROCESS_CRON=false)');
+    return;
+  }
 
   const cron = (await import('node-cron')).default;
   const { runReminderTick } = await import('@/lib/reminders');

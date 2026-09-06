@@ -4,16 +4,13 @@ import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { prisma } from './prisma';
+import { getSessionSecret } from './runtime-config';
 
 const COOKIE_NAME = 'ff_session';
 const SESSION_DAYS = 30;
 
-function secret(): Uint8Array {
-  const value = process.env.SESSION_SECRET;
-  if (!value || value.length < 16) {
-    throw new Error('SESSION_SECRET is missing or too short (need 16+ chars).');
-  }
-  return new TextEncoder().encode(value);
+async function secret(): Promise<Uint8Array> {
+  return new TextEncoder().encode(await getSessionSecret());
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -44,7 +41,7 @@ export async function createSession(userId: string, userAgent?: string): Promise
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DAYS}d`)
-    .sign(secret());
+    .sign(await secret());
 }
 
 export async function setSessionCookie(jwt: string) {
@@ -77,7 +74,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   let payload: { uid?: string; t?: string };
   try {
-    ({ payload } = (await jwtVerify(jwt, secret())) as { payload: { uid?: string; t?: string } });
+    ({ payload } = (await jwtVerify(jwt, await secret())) as { payload: { uid?: string; t?: string } });
   } catch {
     return null;
   }
@@ -114,7 +111,7 @@ export async function destroyCurrentSession() {
   const jwt = store.get(COOKIE_NAME)?.value;
   if (jwt) {
     try {
-      const { payload } = (await jwtVerify(jwt, secret())) as { payload: { t?: string } };
+      const { payload } = (await jwtVerify(jwt, await secret())) as { payload: { t?: string } };
       if (payload.t) {
         await prisma.session.deleteMany({ where: { tokenHash: hashToken(payload.t) } });
       }

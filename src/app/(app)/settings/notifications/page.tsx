@@ -2,19 +2,21 @@ import { prisma } from '@/lib/prisma';
 import { getContext } from '@/lib/context';
 import { PageHeader } from '@/components/PageHeader';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { getVapidKeys } from '@/lib/runtime-config';
 
 export const dynamic = 'force-dynamic';
 
 export default async function NotificationSettingsPage() {
   const ctx = await getContext();
 
-  const [pref, deviceCount] = await Promise.all([
+  const [pref, deviceCount, vapid] = await Promise.all([
     prisma.notificationPreference.upsert({
       where: { userId: ctx.user.id },
       update: {},
       create: { userId: ctx.user.id },
     }),
     prisma.pushSubscription.count({ where: { userId: ctx.user.id } }),
+    getVapidKeys(),
   ]);
 
   return (
@@ -43,7 +45,7 @@ export default async function NotificationSettingsPage() {
           eveningCheckTime: pref.eveningCheckTime,
         }}
         deviceCount={deviceCount}
-        vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''}
+        vapidPublicKey={vapid.publicKey}
         firstName={ctx.user.name.split(' ')[0]}
       />
     </>

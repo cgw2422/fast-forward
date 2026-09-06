@@ -1,22 +1,27 @@
 import 'server-only';
 import webpush from 'web-push';
 import { prisma } from './prisma';
+import { getVapidKeys } from './runtime-config';
 
 let configured = false;
 
-function configure(): boolean {
+async function configure(): Promise<boolean> {
   if (configured) return true;
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || 'mailto:admin@fastforward.app';
+  const { publicKey, privateKey, subject } = await getVapidKeys();
   if (!publicKey || !privateKey) return false;
   webpush.setVapidDetails(subject, publicKey, privateKey);
   configured = true;
   return true;
 }
 
-export function pushConfigured(): boolean {
-  return Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+/** Keys are generated on demand, so this is only false if the database is down. */
+export async function pushConfigured(): Promise<boolean> {
+  try {
+    const { publicKey, privateKey } = await getVapidKeys();
+    return Boolean(publicKey && privateKey);
+  } catch {
+    return false;
+  }
 }
 
 export type PushPayload = {
@@ -33,7 +38,7 @@ export type PushPayload = {
  * dropped the subscription — prune it rather than retrying forever.
  */
 export async function sendToUser(userId: string, payload: PushPayload): Promise<number> {
-  if (!configure()) return 0;
+  if (!(await configure())) return 0;
 
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   if (subs.length === 0) return 0;
