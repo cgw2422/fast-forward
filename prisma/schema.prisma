@@ -14,13 +14,16 @@ datasource db {
 // ---------------------------------------------------------------- identity
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String      @id @default(cuid())
+  email        String      @unique
   passwordHash String
   name         String
-  timezone     String   @default("America/Chicago")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  timezone     String      @default("America/Chicago")
+  /// OWNER accounts own health data and may write it. VIEWER accounts are
+  /// created by invitation and are read-only for every health module, forever.
+  accountType  AccountType @default(OWNER)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   preference         UserPreference?
   notificationPref   NotificationPreference?
@@ -48,6 +51,22 @@ model User {
   notificationLogs   NotificationLog[]
   timelineEvents     TimelineEvent[]
   achievements       Achievement[]
+  progressPhotos     ProgressPhoto[]
+  ruckSessions       RuckSession[]
+  packWeights        PackWeightEntry[]
+
+  // Family: an owner has viewers; a viewer watches owners.
+  viewersOfMe      FamilyRelationship[] @relation("OwnerRelationships")
+  ownersIWatch     FamilyRelationship[] @relation("ViewerRelationships")
+  invitesSent      FamilyInvite[]       @relation("InviteOwner")
+  invitesAccepted  FamilyInvite[]       @relation("InviteAcceptedBy")
+  messagesReceived FamilyMessage[]      @relation("MessageOwner")
+  messagesSent     FamilyMessage[]      @relation("MessageSender")
+}
+
+enum AccountType {
+  OWNER
+  VIEWER
 }
 
 model Session {
@@ -679,6 +698,7 @@ model NotificationLog {
 
 enum TimelineType {
   WATER
+  RUCK
   ELECTROLYTES
   WEIGHT
   WALK
@@ -719,4 +739,200 @@ model AppConfig {
   key       String   @id
   value     String
   createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- family
+
+enum FamilyRole {
+  /// Owns the data. Implicit — never stored on a relationship row.
+  OWNER
+  /// Trusted adult: may see ADULTS-level photos.
+  ADULT_VIEWER
+  /// Kids and extended family: FAMILY-level photos only.
+  FAMILY_VIEWER
+}
+
+/// Every metric a viewer's access can be scoped to, independent of the owner's
+/// own TrackingModule toggles.
+enum FamilyModule {
+  POP_PACT
+  WEIGHT
+  WEIGHT_TREND
+  WALKING
+  RUCKING
+  WATER
+  FASTING
+  TINY_WINS
+  WORKOUTS
+  DAILY_CHECKIN
+  MEASUREMENTS
+  ELECTROLYTES
+  PROGRESS_PHOTOS
+  TIMELINE
+  MILESTONES
+}
+
+model FamilyRelationship {
+  id        String     @id @default(cuid())
+  ownerId   String
+  viewerId  String
+  role      FamilyRole
+  /// Revokes access without destroying the configured permissions.
+  enabled   Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  owner       User                     @relation("OwnerRelationships", fields: [ownerId], references: [id], onDelete: Cascade)
+  viewer      User                     @relation("ViewerRelationships", fields: [viewerId], references: [id], onDelete: Cascade)
+  permissions ViewerModulePermission[]
+
+  @@unique([ownerId, viewerId])
+  @@index([viewerId])
+}
+
+model ViewerModulePermission {
+  id             String       @id @default(cuid())
+  relationshipId String
+  module         FamilyModule
+  enabled        Boolean      @default(false)
+
+  relationship FamilyRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+
+  @@unique([relationshipId, module])
+}
+
+model FamilyInvite {
+  id           String     @id @default(cuid())
+  ownerId      String
+  code         String     @unique
+  name         String
+  email        String?
+  role         FamilyRole
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  acceptedById String?
+  createdAt    DateTime   @default(now())
+
+  owner      User  @relation("InviteOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  acceptedBy User? @relation("InviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+}
+
+/// The single write a viewer is allowed: encouragement addressed to their owner.
+model FamilyMessage {
+  id        String    @id @default(cuid())
+  ownerId   String
+  senderId  String
+  body      String
+  pinned    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  owner  User @relation("MessageOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sender User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@index([ownerId, pinned])
+}
+
+// -------------------------------------------------------- progress photos
+
+enum PhotoVisibility {
+  OWNER_ONLY
+  ADULTS
+  FAMILY
+}
+
+enum PhotoAngle {
+  FRONT
+  SIDE
+  BACK
+  CUSTOM
+}
+
+model ProgressPhoto {
+  id          String          @id @default(cuid())
+  userId      String
+  angle       PhotoAngle      @default(FRONT)
+  customAngle String?
+  capturedAt  DateTime
+  weightKg    Float?
+  notes       String?
+  visibility  PhotoVisibility @default(OWNER_ONLY)
+  isMilestone Boolean         @default(false)
+  isFavorite  Boolean         @default(false)
+
+  /// Opaque key into the storage driver. Bytes never live in Postgres.
+  storageKey String
+  mimeType   String
+  sizeBytes  Int
+  width      Int?
+  height     Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  measurements PhotoMeasurement[]
+
+  @@index([userId, capturedAt])
+  @@index([userId, visibility])
+}
+
+model PhotoMeasurement {
+  id      String @id @default(cuid())
+  photoId String
+  name    String
+  value   Float
+  unit    String
+
+  photo ProgressPhoto @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@index([photoId])
+}
+
+// --------------------------------------------------------------- rucking
+
+enum RuckTerrain {
+  FLAT
+  HILLS
+  TRAIL
+  TREADMILL
+  MIXED
+  OTHER
+}
+
+model RuckSession {
+  id              String       @id @default(cuid())
+  userId          String
+  startedAt       DateTime
+  /// Pack weight for THIS session — never inferred from the latest entry, so
+  /// history stays accurate when the pack changes between sessions.
+  packWeightKg    Float
+  durationMinutes Int
+  distanceMeters  Float?
+  steps           Int?
+  terrain         RuckTerrain?
+  difficulty      Int?
+  /// Body weight at session time, so Total Load stays correct retroactively.
+  bodyWeightKg    Float?
+  notes           String?
+  createdAt       DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt])
+}
+
+/// Pack weight as its own timeline. It can go up, down, or sideways.
+model PackWeightEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  weightKg      Float
+  effectiveFrom DateTime @default(now())
+  note          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveFrom])
 }

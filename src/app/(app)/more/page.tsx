@@ -10,11 +10,20 @@ const SECTIONS: { title: string; items: { href: string; label: string; icon: str
     title: 'Track',
     items: [
       { href: '/hydration', label: 'Hydration Station', icon: '💧' },
+      { href: '/ruck', label: 'Pack It Forward', icon: '🎒' },
+      { href: '/forward-focus', label: 'Forward Focus', icon: '📸' },
       { href: '/electrolytes', label: 'Electrolytes', icon: '⚡' },
       { href: '/pop-pact', label: 'The Pop Pact', icon: '🤝' },
       { href: '/weight', label: 'Weight', icon: '⚖️' },
       { href: '/workouts', label: 'Workouts', icon: '🏋️' },
       { href: '/check-in', label: 'Daily Check-In', icon: '📝' },
+    ],
+  },
+  {
+    title: 'Family',
+    items: [
+      { href: '/family-messages', label: 'Family Messages', icon: '💚' },
+      { href: '/settings/family', label: 'Manage Family View', icon: '👨‍👩‍👦' },
     ],
   },
   {
@@ -24,6 +33,7 @@ const SECTIONS: { title: string; items: { href: string; label: string; icon: str
       { href: '/fast/history', label: 'Fasting History', icon: '⏱' },
       { href: '/fast/refeed', label: 'Refeeding Log', icon: '🍲' },
       { href: '/achievements', label: 'Achievements', icon: '🏆' },
+      { href: '/forward-focus/compare', label: 'Before / After', icon: '🪞' },
     ],
   },
   {
@@ -31,6 +41,7 @@ const SECTIONS: { title: string; items: { href: string; label: string; icon: str
     items: [
       { href: '/settings/profile', label: 'Profile', icon: '👤' },
       { href: '/settings/notifications', label: 'Notifications', icon: '🔔' },
+      { href: '/settings/family', label: 'Family View', icon: '👨‍👩‍👦' },
       { href: '/settings/goals', label: 'Goals & Fasting', icon: '🎯' },
       { href: '/settings/hydration', label: 'Water Containers', icon: '🥤' },
       { href: '/settings/tracking', label: 'Tracking Modules', icon: '🎛' },

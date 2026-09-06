@@ -1,6 +1,7 @@
 import 'server-only';
 import { prisma } from './prisma';
-import { requireUser, type SessionUser } from './auth';
+import { type SessionUser } from './auth';
+import { requireOwnerUser } from './authz';
 import type { TrackingModule, UserPreference } from '@prisma/client';
 
 export const DEFAULT_MODULES: { module: TrackingModule; enabled: boolean; label: string; group: string }[] = [
@@ -30,11 +31,16 @@ export type AppContext = {
 };
 
 /**
- * Every server page/route starts here. Creates preference + module rows lazily
- * so a user created by any path (signup, seed, future invite) is always whole.
+ * Every owner page and every health mutation starts here. It requires an OWNER
+ * account, which is what makes viewer accounts read-only across the whole API
+ * without each route repeating the check. Family-facing reads use
+ * `requireViewAccess` in authz.ts instead.
+ *
+ * Creates preference + module rows lazily so a user created by any path
+ * (signup, seed, invite) is always whole.
  */
 export async function getContext(): Promise<AppContext> {
-  const user = await requireUser();
+  const user = await requireOwnerUser();
 
   let prefs = await prisma.userPreference.findUnique({ where: { userId: user.id } });
   if (!prefs) {

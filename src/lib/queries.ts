@@ -2,6 +2,7 @@ import 'server-only';
 import { prisma } from './prisma';
 import { dayRange, todayKey, weekdayIndex } from './dates';
 import { streakDays } from './poppact';
+import { getLoadComparison, getPackStats } from './ruck';
 import type { AppContext } from './context';
 
 export type TodaySnapshot = Awaited<ReturnType<typeof getTodaySnapshot>>;
@@ -13,8 +14,25 @@ export async function getTodaySnapshot(ctx: AppContext, now = new Date()) {
   const today = todayKey(timezone);
   const dow = weekdayIndex(now, timezone);
 
-  const [activeFast, pact, water, lastWater, walks, weights, electrolytes, habits, completions, checkIn, steps] =
-    await Promise.all([
+  const [
+    activeFast,
+    pact,
+    water,
+    lastWater,
+    walks,
+    weights,
+    electrolytes,
+    habits,
+    completions,
+    checkIn,
+    steps,
+    unreadMessages,
+    pinnedMessage,
+    latestPhoto,
+    latestRuck,
+    packStats,
+    load,
+  ] = await Promise.all([
       prisma.fast.findFirst({ where: { userId: user.id, status: 'ACTIVE' }, orderBy: { startAt: 'desc' } }),
       prisma.popPact.findUnique({ where: { userId: user.id } }),
       prisma.waterEntry.aggregate({ where: { userId: user.id, loggedAt: range }, _sum: { volumeMl: true } }),
@@ -33,6 +51,16 @@ export async function getTodaySnapshot(ctx: AppContext, now = new Date()) {
       prisma.habitCompletion.findMany({ where: { habit: { userId: user.id }, date: today } }),
       prisma.dailyCheckIn.findUnique({ where: { userId_date: { userId: user.id, date: today } } }),
       prisma.stepEntry.findUnique({ where: { userId_date: { userId: user.id, date: today } } }),
+      prisma.familyMessage.count({ where: { ownerId: user.id, readAt: null } }),
+      prisma.familyMessage.findFirst({
+        where: { ownerId: user.id, pinned: true },
+        include: { sender: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.progressPhoto.findFirst({ where: { userId: user.id }, orderBy: { capturedAt: 'desc' } }),
+      prisma.ruckSession.findFirst({ where: { userId: user.id }, orderBy: { startedAt: 'desc' } }),
+      getPackStats(user.id),
+      getLoadComparison(user.id),
     ]);
 
   const totalWaterMl = water._sum.volumeMl ?? 0;
@@ -82,6 +110,27 @@ export async function getTodaySnapshot(ctx: AppContext, now = new Date()) {
     votesCast,
     votesTotal: scheduledHabits.length,
     checkIn,
+    unreadMessages,
+    pinnedMessage: pinnedMessage
+      ? { id: pinnedMessage.id, body: pinnedMessage.body, sender: pinnedMessage.sender.name.split(' ')[0] }
+      : null,
+    latestPhotoAt: latestPhoto?.capturedAt ?? null,
+    // Nudge for a fresh photo once a month, and only after the first one exists.
+    photoReminderDue: latestPhoto
+      ? now.getTime() - latestPhoto.capturedAt.getTime() > 30 * 86_400_000
+      : false,
+    hasPhotos: Boolean(latestPhoto),
+    ruck: latestRuck
+      ? {
+          packWeightKg: latestRuck.packWeightKg,
+          distanceMeters: latestRuck.distanceMeters,
+          durationMinutes: latestRuck.durationMinutes,
+          startedAt: latestRuck.startedAt,
+        }
+      : null,
+    packCurrentKg: packStats.currentKg,
+    lostKg: load.lostKg,
+    percentOfLoss: load.percentOfLoss,
   };
 }
 

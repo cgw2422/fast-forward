@@ -53,8 +53,8 @@ export default async function MovePage() {
         subtitle="Steps today. A stronger tomorrow."
         backHref="/today"
         action={
-          <Link href="/workouts" className="text-xs font-bold text-lime">
-            Lifts
+          <Link href="/ruck" className="text-xs font-bold text-lime">
+            Ruck
           </Link>
         }
       />

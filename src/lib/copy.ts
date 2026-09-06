@@ -97,6 +97,20 @@ export const MOVE_ACHIEVEMENTS: { key: string; minutes: number; label: string }[
   { key: 'move_120', minutes: 120, label: 'Forrest Gump Mode' },
 ];
 
+export const RUCK_ACHIEVEMENTS: { key: string; lb: number; label: string }[] = [
+  { key: 'ruck_5', lb: 5, label: 'Baby Ruck' },
+  { key: 'ruck_10', lb: 10, label: "Now We're Carrying Something" },
+  { key: 'ruck_20', lb: 20, label: 'Pack It Forward' },
+  { key: 'ruck_30', lb: 30, label: 'Why Did I Used to Carry This Everywhere?' },
+];
+
+export const RUCK_COPY = {
+  title: 'Pack It Forward',
+  chooseToCarry: 'You used to carry this weight every day. Now you choose when to carry it.',
+  empty: 'No rucks logged yet. The pack is patient.',
+  totalLoad: 'Total Load',
+};
+
 /* ---------------------------------------------------------------- pop pact */
 
 export const POP_ACHIEVEMENTS: { key: string; days: number; label: string }[] = [

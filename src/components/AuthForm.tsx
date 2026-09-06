@@ -11,11 +11,17 @@ const BENEFITS = [
   { icon: '👨‍👦', title: 'Be there for the moments.' },
 ];
 
-export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
+export function AuthForm({
+  mode,
+  invite,
+}: {
+  mode: 'login' | 'signup';
+  invite?: { code: string; ownerName: string; name: string; role: string } | null;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(invite?.name ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,7 +36,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
     const response = await fetch(`/api/auth/${mode}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(isSignup ? { email, password, name, timezone } : { email, password }),
+      body: JSON.stringify(
+        isSignup ? { email, password, name, timezone, inviteCode: invite?.code } : { email, password }
+      ),
     });
 
     if (!response.ok) {
@@ -40,7 +48,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
       return;
     }
 
-    router.push('/today');
+    router.push(invite ? '/family' : '/today');
     router.refresh();
   }
 
@@ -53,8 +61,22 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         </div>
         <Tagline className="mt-4" />
 
+        {invite ? (
+          <div className="mt-6 rounded-2xl border border-lime/25 bg-lime/[0.07] p-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-lime">You&apos;ve been invited</p>
+            <p className="mt-1.5 text-[15px] font-semibold text-cream">
+              {invite.ownerName} wants you to follow their progress.
+            </p>
+            <p className="mt-1 text-xs text-slate">
+              You&apos;ll get a read-only view{' '}
+              {invite.role === 'FAMILY_VIEWER' ? 'of what they choose to share' : 'of their shared progress'} — and you
+              can cheer them on.
+            </p>
+          </div>
+        ) : null}
+
         <ul className="mt-8 space-y-4">
-          {BENEFITS.map((b) => (
+          {(invite ? BENEFITS.slice(1) : BENEFITS).map((b) => (
             <li key={b.title} className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-raised text-base">{b.icon}</span>
               <span className="text-[15px] font-semibold text-cream">{b.title}</span>

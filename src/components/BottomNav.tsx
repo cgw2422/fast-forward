@@ -12,7 +12,7 @@ const TABS: Tab[] = [
   {
     href: '/today',
     label: 'Today',
-    match: ['/today', '/timeline', '/check-in'],
+    match: ['/today', '/timeline', '/check-in', '/family-messages'],
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
         <path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -34,7 +34,7 @@ const TABS: Tab[] = [
   {
     href: '/move',
     label: 'Move',
-    match: ['/move', '/workouts', '/weight'],
+    match: ['/move', '/workouts', '/weight', '/ruck'],
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" {...stroke}>
         <circle cx="13" cy="4" r="1.6" />
@@ -56,7 +56,7 @@ const TABS: Tab[] = [
   {
     href: '/more',
     label: 'More',
-    match: ['/more', '/settings', '/hydration', '/pop-pact', '/electrolytes'],
+    match: ['/more', '/settings', '/hydration', '/pop-pact', '/electrolytes', '/forward-focus'],
     icon: () => (
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
         <circle cx="5" cy="12" r="2" />

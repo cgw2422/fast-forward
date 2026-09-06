@@ -3,8 +3,8 @@ import { getSessionUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export default async function RootPage() {
+export default async function FamilyLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect('/login');
-  redirect(user.accountType === 'VIEWER' ? '/family' : '/today');
+  return <div className="min-h-[100dvh] bg-midnight">{children}</div>;
 }

@@ -5,6 +5,7 @@ import { AuthForm } from '@/components/AuthForm';
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {
-  if (await getSessionUser()) redirect('/today');
+  const user = await getSessionUser();
+  if (user) redirect(user.accountType === 'VIEWER' ? '/family' : '/today');
   return <AuthForm mode="login" />;
 }

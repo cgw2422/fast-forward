@@ -6,7 +6,13 @@ import { PopGoblin } from '@/components/PopGoblin';
 import { useToast } from '@/components/ui/Toast';
 import { POP_COPY, POP_DISTRACTIONS } from '@/lib/copy';
 
-export function CravingView({ reason }: { reason: string }) {
+export function CravingView({
+  reason,
+  pinned,
+}: {
+  reason: string;
+  pinned?: { sender: string; body: string } | null;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [distraction, setDistraction] = useState<string | null>(null);
@@ -62,6 +68,17 @@ export function CravingView({ reason }: { reason: string }) {
           </p>
           <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white">&ldquo;{reason}&rdquo;</p>
         </div>
+
+        {pinned ? (
+          <div className="mt-4 rounded-2xl border border-white/15 bg-black/20 p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">
+              {pinned.sender} said
+            </p>
+            <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white">
+              &ldquo;{pinned.body}&rdquo;
+            </p>
+          </div>
+        ) : null}
 
         {distraction ? (
           <div className="mt-4 animate-pop-in rounded-2xl border border-white/15 bg-black/20 p-5">

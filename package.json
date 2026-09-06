@@ -12,7 +12,9 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "genkeys": "node scripts/generate-vapid.js",
-    "test": "tsx tests/reminders.test.ts"
+    "test": "tsx tests/reminders.test.ts && npm run test:authz",
+    "test:authz": "tsx --conditions=react-server tests/authz.test.ts",
+    "test:http": "tsx tests/authz-http.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -95,6 +95,20 @@ function serialize(snapshot: Awaited<ReturnType<typeof getTodaySnapshot>>) {
         }
       : null,
     popStreakDays: snapshot.popStreakDays,
+    unreadMessages: snapshot.unreadMessages,
+    pinnedMessage: snapshot.pinnedMessage,
+    photoReminderDue: snapshot.photoReminderDue,
+    hasPhotos: snapshot.hasPhotos,
+    ruck: snapshot.ruck
+      ? {
+          packWeightKg: snapshot.ruck.packWeightKg,
+          distanceMeters: snapshot.ruck.distanceMeters,
+          durationMinutes: snapshot.ruck.durationMinutes,
+        }
+      : null,
+    packCurrentKg: snapshot.packCurrentKg,
+    lostKg: snapshot.lostKg,
+    percentOfLoss: snapshot.percentOfLoss,
     popStartIso: snapshot.popPact ? snapshot.popPact.startDate.toISOString() : null,
     water: snapshot.water,
     walk: snapshot.walk,

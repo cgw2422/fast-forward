@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ProgressBar } from '@/components/ui/ProgressRing';
 import { FastClock } from '@/components/LiveClock';
-import { formatVolume, formatWeight, formatDistance, weightLabel } from '@/lib/units';
+import { formatVolume, formatWeight, formatDistance, weightLabel, kgToDisplay } from '@/lib/units';
 import type { VolumeUnit, WeightUnit, DistanceUnit } from '@/lib/units';
 import { POP_COPY, MOVE_COPY } from '@/lib/copy';
 import { useToast } from '@/components/ui/Toast';
@@ -31,6 +31,14 @@ type Snapshot = {
   votesCast: number;
   votesTotal: number;
   hasCheckIn: boolean;
+  unreadMessages: number;
+  pinnedMessage: { id: string; body: string; sender: string } | null;
+  photoReminderDue: boolean;
+  hasPhotos: boolean;
+  ruck: { packWeightKg: number; distanceMeters: number | null; durationMinutes: number } | null;
+  packCurrentKg: number | null;
+  lostKg: number | null;
+  percentOfLoss: number | null;
 };
 
 type Prefs = { volumeUnit: VolumeUnit; weightUnit: WeightUnit; distanceUnit: DistanceUnit; use24Hour: boolean };
@@ -319,6 +327,85 @@ export function TodayCards({
             {snapshot.votesCast} of {snapshot.votesTotal} votes cast today.
           </p>
         </div>
+      ) : null}
+
+      {/* ------------------------------------------------ pack it forward */}
+      {snapshot.ruck || snapshot.packCurrentKg !== null ? (
+        <Link href="/ruck" className="ff-card ff-pressable block">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-midnight text-lg">🎒</span>
+            <div className="min-w-0 flex-1">
+              <div className="ff-label text-lime">Pack It Forward</div>
+              <div className="ff-metric">
+                {snapshot.packCurrentKg !== null
+                  ? `${Math.round(kgToDisplay(snapshot.packCurrentKg, prefs.weightUnit))} ${weightLabel(prefs.weightUnit)}`
+                  : '—'}
+                <span className="text-base font-bold text-slate"> pack</span>
+              </div>
+              {snapshot.ruck ? (
+                <p className="mt-0.5 text-xs text-slate">
+                  Last ruck{' '}
+                  {snapshot.ruck.distanceMeters
+                    ? `${formatDistance(snapshot.ruck.distanceMeters, prefs.distanceUnit)} · `
+                    : ''}
+                  {snapshot.ruck.durationMinutes} min
+                </p>
+              ) : (
+                <p className="mt-0.5 text-xs text-slate">Tap to log a ruck</p>
+              )}
+            </div>
+            <Chevron />
+          </div>
+          {snapshot.percentOfLoss !== null && snapshot.lostKg && snapshot.lostKg > 0 ? (
+            <p className="mt-3 border-t border-white/[0.06] pt-3 text-xs text-cream/80">
+              <span className="font-bold text-lime">{snapshot.percentOfLoss}%</span> of the{' '}
+              {formatWeight(snapshot.lostKg, prefs.weightUnit)} you&apos;ve lost is weight you now choose to carry.
+            </p>
+          ) : null}
+        </Link>
+      ) : null}
+
+      {/* -------------------------------------------------- family messages */}
+      {snapshot.pinnedMessage ? (
+        <Link href="/family-messages" className="ff-card ff-pressable block border-lime/25 bg-lime/[0.04]">
+          <div className="ff-label mb-2 text-lime">📌 From {snapshot.pinnedMessage.sender}</div>
+          <p className="text-[15px] font-semibold leading-relaxed text-cream">
+            &ldquo;{snapshot.pinnedMessage.body}&rdquo;
+          </p>
+        </Link>
+      ) : null}
+
+      {snapshot.unreadMessages > 0 ? (
+        <Link href="/family-messages" className="ff-card ff-pressable flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-midnight text-lg">💚</span>
+          <div className="min-w-0 flex-1">
+            <div className="ff-label">Family Messages</div>
+            <div className="text-lg font-extrabold text-cream">
+              {snapshot.unreadMessages} new cheer{snapshot.unreadMessages === 1 ? '' : 's'}
+            </div>
+          </div>
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-lime" />
+          <Chevron />
+        </Link>
+      ) : null}
+
+      {/* --------------------------------------------------- forward focus */}
+      {!snapshot.hasPhotos || snapshot.photoReminderDue ? (
+        <Link href="/forward-focus" className="ff-card ff-pressable flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-midnight text-lg">📸</span>
+          <div className="min-w-0 flex-1">
+            <div className="ff-label">Forward Focus</div>
+            <div className="text-sm font-bold text-cream">
+              {snapshot.hasPhotos ? 'Time for a new progress photo' : 'Take the picture now.'}
+            </div>
+            <p className="mt-0.5 text-[11px] text-slate">
+              {snapshot.hasPhotos
+                ? "It's been over a month since the last one."
+                : 'Someday you may be glad you have it.'}
+            </p>
+          </div>
+          <Chevron />
+        </Link>
       ) : null}
 
       {/* ------------------------------------------------------ quick links */}

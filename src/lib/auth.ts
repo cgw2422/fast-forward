@@ -65,6 +65,7 @@ export type SessionUser = {
   email: string;
   name: string;
   timezone: string;
+  accountType: 'OWNER' | 'VIEWER';
 };
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -82,7 +83,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashToken(payload.t) },
-    include: { user: { select: { id: true, email: true, name: true, timezone: true } } },
+    include: { user: { select: { id: true, email: true, name: true, timezone: true, accountType: true } } },
   });
 
   if (!session || session.userId !== payload.uid) return null;
