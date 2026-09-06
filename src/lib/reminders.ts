@@ -15,6 +15,7 @@ import {
   type Personality,
 } from './copy';
 import { streakDays } from './poppact';
+import { evaluateWaterReminder } from './water-logic';
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -57,12 +58,25 @@ export async function computeWaterState(
   const totalMl = entries.reduce((sum, e) => sum + e.volumeMl, 0);
   const lastAt = entries[0]?.loggedAt ?? null;
 
-  // With nothing logged yet, the clock starts at the window opening, not midnight.
-  const windowOpen = new Date(start.getTime() + parseHHMM(windowStart) * 60_000);
-  const anchor = lastAt ?? windowOpen;
-  const nextReminderAt = new Date(anchor.getTime() + intervalMinutes * 60_000);
+  const evaluation = evaluateWaterReminder({
+    now,
+    dayStart: start,
+    lastWaterAt: lastAt,
+    totalMl,
+    goalMl,
+    intervalMinutes,
+    windowStartMinutes: parseHHMM(windowStart),
+    idleMinutes: 0,
+    stopAfterGoal: false,
+  });
 
-  return { goalMl, totalMl, lastAt, nextReminderAt, goalReached: totalMl >= goalMl };
+  return {
+    goalMl,
+    totalMl,
+    lastAt,
+    nextReminderAt: evaluation.nextReminderAt,
+    goalReached: evaluation.goalReached,
+  };
 }
 
 /* ---------------------------------------------------------------- the tick */
@@ -113,12 +127,20 @@ export async function runReminderTick(now = new Date()): Promise<TickResult> {
           now
         );
 
-        const stopped = pref.waterStopAfterGoal && state.goalReached;
-        const idleLongEnough =
-          !state.lastAt || now.getTime() - state.lastAt.getTime() >= pref.waterIdleMinutes * 60_000;
-        const due = state.nextReminderAt !== null && now.getTime() >= state.nextReminderAt.getTime();
+        const { start: dayStart } = dayRange(now, tz);
+        const eligibility = evaluateWaterReminder({
+          now,
+          dayStart,
+          lastWaterAt: state.lastAt,
+          totalMl: state.totalMl,
+          goalMl: state.goalMl,
+          intervalMinutes: pref.waterIntervalMinutes,
+          windowStartMinutes: parseHHMM(pref.waterWindowStart),
+          idleMinutes: pref.waterIdleMinutes,
+          stopAfterGoal: pref.waterStopAfterGoal,
+        });
 
-        if (!stopped && due && idleLongEnough) {
+        if (eligibility.shouldNotify) {
           const remainingMl = Math.max(0, state.goalMl - state.totalMl);
           const pctDone = state.goalMl > 0 ? state.totalMl / state.goalMl : 0;
           const unit = settings.volumeUnit;
@@ -416,7 +438,10 @@ export async function buildEveningSummary(userId: string, timezone: string, now 
 
   const lines: string[] = [];
 
-  if (pact) lines.push(`🤝 Pop Pact — ${streakDays(pact, timezone)} days`);
+  if (pact) {
+    const days = streakDays(pact, timezone);
+    lines.push(`🤝 Pop Pact — ${days} day${days === 1 ? '' : 's'}`);
+  }
 
   const totalMl = water._sum.volumeMl ?? 0;
   lines.push(

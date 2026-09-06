@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "genkeys": "node scripts/generate-vapid.js"
+    "genkeys": "node scripts/generate-vapid.js",
+    "test": "tsx tests/reminders.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
