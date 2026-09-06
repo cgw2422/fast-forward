@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from './prisma';
-import { sendOnce, sendToUser, pushConfigured } from './push';
+import { sendOnce, pushConfigured } from './push';
 import { dayRange, isWithinWindow, minutesOfDay, parseHHMM, todayKey, weekdayIndex, ymd, formatTime } from './dates';
 import { formatVolume, formatDurationShort, mlToDisplay } from './units';
 import {
@@ -534,4 +534,3 @@ export async function buildEveningSummary(userId: string, timezone: string, now 
   return lines.join('\n');
 }
 
-export { sendToUser, formatTime };

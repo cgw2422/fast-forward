@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from './prisma';
-import { dayKey, daysBetween, todayKey } from './dates';
+import { daysBetween, todayKey } from './dates';
 import { POP_ACHIEVEMENTS } from './copy';
 import type { PopPact } from '@prisma/client';
 
@@ -77,4 +77,3 @@ export async function recordSlip(pactId: string, timezone: string, note?: string
   });
 }
 
-export { dayKey };

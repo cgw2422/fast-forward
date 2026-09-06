@@ -179,4 +179,4 @@ export const EMPTY_STATES = {
   electrolytes: 'No electrolytes logged today.',
 };
 
-export { pick as pickFromPool };
+
