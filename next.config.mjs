@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Lint runs in dev and CI (`npm run lint`), not during deploy builds — ESLint
+  // is a dev dependency and may not be installed in production.
+  eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [
       {
