@@ -70,6 +70,23 @@ export function HabitsView({ habits, todayIndex }: { habits: Habit[]; todayIndex
     }
   }
 
+  /** Pausing only flips `active`; today's completion is left alone. */
+  async function toggleActive(habit: Habit) {
+    setBusy(true);
+    const response = await fetch('/api/habits', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: habit.id, active: !habit.active }),
+    });
+    setBusy(false);
+    if (response.ok) {
+      toast(habit.active ? 'Paused' : 'Resumed', 'info');
+      router.refresh();
+    } else {
+      toast('Could not save', 'error');
+    }
+  }
+
   function openEdit(habit: Habit) {
     setForm({
       name: habit.name,
@@ -181,7 +198,11 @@ export function HabitsView({ habits, todayIndex }: { habits: Habit[]; todayIndex
                     </svg>
                   </button>
 
-                  <button onClick={() => openEdit(habit)} className="min-w-0 flex-1 text-left">
+                  <button
+                    onClick={() => openEdit(habit)}
+                    aria-label={`Edit ${habit.name}`}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-cream">{habit.name}</span>
                       {habit.status === 'TINY' ? (
@@ -222,8 +243,30 @@ export function HabitsView({ habits, todayIndex }: { habits: Habit[]; todayIndex
                   </button>
                 </div>
 
+                {tab === 'all' ? (
+                  <div className="mt-3 flex gap-2 border-t border-white/[0.06] pt-3">
+                    <button onClick={() => openEdit(habit)} className="ff-btn-secondary flex-1 py-2 text-xs">
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => toggleActive(habit)}
+                      disabled={busy}
+                      className="ff-btn-secondary px-3 py-2 text-xs"
+                    >
+                      {habit.active ? 'Pause' : 'Resume'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(habit.id)}
+                      aria-label={`Delete ${habit.name}`}
+                      className="ff-btn-danger px-3 py-2 text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ) : null}
+
                 {/* Never all-or-nothing: the minimum version is always one tap away. */}
-                {!done && habit.tinyGoalLabel ? (
+                {tab === 'today' && !done && habit.tinyGoalLabel ? (
                   <button
                     onClick={() => setStatus(habit, 'TINY')}
                     disabled={busy}
@@ -375,7 +418,7 @@ export function HabitsView({ habits, todayIndex }: { habits: Habit[]; todayIndex
             {editing ? 'Save changes' : 'Add habit'}
           </button>
           {editing ? (
-            <button onClick={() => setConfirmDelete(editing.id)} className="ff-btn-ghost w-full text-xs">
+            <button onClick={() => setConfirmDelete(editing.id)} className="ff-btn-danger w-full py-3">
               Delete habit
             </button>
           ) : null}
@@ -385,7 +428,7 @@ export function HabitsView({ habits, todayIndex }: { habits: Habit[]; todayIndex
       <ConfirmDialog
         open={confirmDelete !== null}
         title="Delete this habit?"
-        body="Its completion history goes with it. If you just want to stop tracking it for now, turn Active off instead."
+        body="Its completion history goes with it. If you just want to stop tracking it for now, use Pause instead — that keeps everything."
         confirmLabel="Delete"
         destructive
         onCancel={() => setConfirmDelete(null)}
