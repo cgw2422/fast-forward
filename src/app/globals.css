@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #101828;
+  color: #f7f6f1;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* Bottom nav clearance + iOS home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@layer base {
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* Stops iOS Safari from zooming on focus. */
+  }
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+@layer components {
+  .ff-card {
+    @apply rounded-2xl border border-white/[0.06] bg-surface p-4 shadow-card;
+  }
+  .ff-pressable {
+    @apply transition active:scale-[0.98];
+  }
+  .ff-label {
+    @apply text-[11px] font-bold uppercase tracking-[0.14em] text-slate;
+  }
+  .ff-metric {
+    @apply text-3xl font-extrabold tracking-tight tabular-nums text-cream;
+  }
+  .ff-input {
+    @apply w-full rounded-xl border border-white/10 bg-midnight px-4 py-3 text-cream
+           placeholder:text-slate/70 outline-none transition
+           focus:border-lime/60 focus:ring-2 focus:ring-lime/20;
+  }
+  .ff-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold
+           transition ff-pressable disabled:opacity-50 disabled:active:scale-100;
+  }
+  .ff-btn-primary {
+    @apply ff-btn bg-lime text-midnight hover:bg-lime/90;
+  }
+  .ff-btn-secondary {
+    @apply ff-btn border border-white/10 bg-raised text-cream hover:bg-raised/70;
+  }
+  .ff-btn-ghost {
+    @apply ff-btn text-slate hover:text-cream;
+  }
+  .ff-btn-danger {
+    @apply ff-btn bg-coral/15 text-coral hover:bg-coral/25;
+  }
+  .ff-skeleton {
+    @apply relative overflow-hidden rounded-xl bg-white/[0.04];
+  }
+  .ff-skeleton::after {
+    @apply absolute inset-0 -translate-x-full animate-shimmer
+           bg-gradient-to-r from-transparent via-white/[0.06] to-transparent;
+    content: '';
+  }
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Number inputs: hide spinners, they're useless on touch. */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}

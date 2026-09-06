@@ -1,0 +1,713 @@
+// FAST FORWARD — Prisma schema
+// Canonical storage units: volume = mL, weight = kg, distance = meters, duration = seconds/minutes as named.
+// Display conversion happens at the UI edge (see src/lib/units.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- identity
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  timezone     String   @default("America/Chicago")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  preference         UserPreference?
+  notificationPref   NotificationPreference?
+  popPact            PopPact?
+  sessions           Session[]
+  moduleSettings     ModuleSetting[]
+  fasts              Fast[]
+  fastPresets        FastPreset[]
+  waterEntries       WaterEntry[]
+  waterPresets       WaterPreset[]
+  electrolyteEntries ElectrolyteEntry[]
+  electrolytePresets ElectrolytePreset[]
+  weightEntries      WeightEntry[]
+  measurementEntries MeasurementEntry[]
+  walkEntries        WalkEntry[]
+  stepEntries        StepEntry[]
+  exercises          Exercise[]
+  workoutTemplates   WorkoutTemplate[]
+  workouts           Workout[]
+  checkIns           DailyCheckIn[]
+  habits             Habit[]
+  habitStackRules    HabitStackRule[]
+  refeedEntries      RefeedEntry[]
+  pushSubscriptions  PushSubscription[]
+  notificationLogs   NotificationLog[]
+  timelineEvents     TimelineEvent[]
+  achievements       Achievement[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------- preferences
+
+enum WeightUnit {
+  LB
+  KG
+}
+
+enum VolumeUnit {
+  OZ
+  ML
+  L
+}
+
+enum DistanceUnit {
+  MI
+  KM
+}
+
+model UserPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  weightUnit   WeightUnit   @default(LB)
+  volumeUnit   VolumeUnit   @default(OZ)
+  distanceUnit DistanceUnit @default(MI)
+  use24Hour    Boolean      @default(false)
+
+  // Goals stored canonically
+  dailyWaterMl            Float  @default(3549.4) // ~120 oz
+  dailyWalkMinutes        Int    @default(30)
+  tinyWalkMinutes         Int    @default(5)
+  dailyStepGoal           Int    @default(7000)
+  defaultFastHours        Float? @default(18)
+  goalWeightKg            Float?
+  weightTrendDays         Int    @default(7)
+  weightComparePeriodDays Int    @default(30)
+
+  // Prolonged-fast safety notice threshold (hours)
+  safetyNoticeHours Int @default(48)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum TrackingModule {
+  FASTING
+  WATER
+  ELECTROLYTES
+  WEIGHT
+  WALKING
+  STEPS
+  WORKOUTS
+  MEASUREMENTS
+  CALORIES
+  SLEEP
+  BLOOD_PRESSURE
+  BLOOD_GLUCOSE
+  KETONES
+  DAILY_CHECKIN
+  POP_PACT
+  HABITS
+}
+
+model ModuleSetting {
+  id        String         @id @default(cuid())
+  userId    String
+  module    TrackingModule
+  enabled   Boolean        @default(true)
+  sortOrder Int            @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+}
+
+// ---------------------------------------------------------------- fasting
+
+enum FastStatus {
+  ACTIVE
+  COMPLETED
+}
+
+model Fast {
+  id            String     @id @default(cuid())
+  userId        String
+  startAt       DateTime
+  endAt         DateTime?
+  targetHours   Float?
+  presetLabel   String?
+  startWeightKg Float?
+  endWeightKg   Float?
+  notes         String?
+  status        FastStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones FastMilestone[]
+  refeeds    RefeedEntry[]
+
+  @@index([userId, startAt])
+  @@index([userId, status])
+}
+
+model FastMilestone {
+  id        String   @id @default(cuid())
+  fastId    String
+  hours     Float
+  reachedAt DateTime
+  notified  Boolean  @default(false)
+
+  fast Fast @relation(fields: [fastId], references: [id], onDelete: Cascade)
+
+  @@unique([fastId, hours])
+}
+
+model FastPreset {
+  id        String  @id @default(cuid())
+  userId    String
+  label     String
+  hours     Float
+  sortOrder Int     @default(0)
+  isSystem  Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefeedEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  fastId     String?
+  occurredAt DateTime
+  meal       String
+  amount     String?
+  waterMl    Float?
+  symptoms   String?
+  weightKg   Float?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fast Fast? @relation(fields: [fastId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt])
+}
+
+// ---------------------------------------------------------------- hydration
+
+model WaterEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  volumeMl  Float
+  loggedAt  DateTime @default(now())
+  presetId  String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preset WaterPreset? @relation(fields: [presetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, loggedAt])
+}
+
+model WaterPreset {
+  id        String  @id @default(cuid())
+  userId    String
+  label     String
+  volumeMl  Float
+  sortOrder Int     @default(0)
+  icon      String?
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries WaterEntry[]
+
+  @@index([userId])
+}
+
+model ElectrolytePreset {
+  id              String  @id @default(cuid())
+  userId          String
+  name            String
+  servingSize     String?
+  sodiumMg        Float?
+  potassiumMg     Float?
+  magnesiumMg     Float?
+  customNutrients Json?
+  notes           String?
+  sortOrder       Int     @default(0)
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries ElectrolyteEntry[]
+
+  @@index([userId])
+}
+
+model ElectrolyteEntry {
+  id              String   @id @default(cuid())
+  userId          String
+  presetId        String?
+  name            String
+  servings        Float    @default(1)
+  sodiumMg        Float?
+  potassiumMg     Float?
+  magnesiumMg     Float?
+  customNutrients Json?
+  loggedAt        DateTime @default(now())
+  notes           String?
+
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preset ElectrolytePreset? @relation(fields: [presetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, loggedAt])
+}
+
+// ---------------------------------------------------------------- body metrics
+
+model WeightEntry {
+  id       String   @id @default(cuid())
+  userId   String
+  weightKg Float
+  loggedAt DateTime @default(now())
+  note     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+}
+
+model MeasurementEntry {
+  id       String   @id @default(cuid())
+  userId   String
+  name     String
+  value    Float
+  unit     String
+  loggedAt DateTime @default(now())
+  note     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+}
+
+// ---------------------------------------------------------------- movement
+
+model WalkEntry {
+  id             String   @id @default(cuid())
+  userId         String
+  minutes        Int
+  distanceMeters Float?
+  steps          Int?
+  loggedAt       DateTime @default(now())
+  note           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+}
+
+model StepEntry {
+  id     String   @id @default(cuid())
+  userId String
+  date   DateTime @db.Date
+  steps  Int
+  source String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model Exercise {
+  id             String  @id @default(cuid())
+  userId         String
+  name           String
+  category       String?
+  tracksSets     Boolean @default(true)
+  tracksReps     Boolean @default(true)
+  tracksWeight   Boolean @default(true)
+  tracksDuration Boolean @default(false)
+  tracksDistance Boolean @default(false)
+  notes          String?
+  archived       Boolean @default(false)
+
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateEntries WorkoutTemplateExercise[]
+  workoutEntries  WorkoutExercise[]
+
+  @@unique([userId, name])
+}
+
+model WorkoutTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user      User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutTemplateExercise[]
+  workouts  Workout[]
+
+  @@index([userId])
+}
+
+model WorkoutTemplateExercise {
+  id         String @id @default(cuid())
+  templateId String
+  exerciseId String
+  sortOrder  Int    @default(0)
+
+  targetSets        Int?
+  targetReps        Int?
+  targetWeightKg    Float?
+  targetDurationSec Int?
+  targetDistanceM   Float?
+  notes             String?
+
+  template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise Exercise        @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+model Workout {
+  id         String    @id @default(cuid())
+  userId     String
+  templateId String?
+  name       String
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  notes      String?
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  WorkoutTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  exercises WorkoutExercise[]
+
+  @@index([userId, startedAt])
+}
+
+model WorkoutExercise {
+  id         String  @id @default(cuid())
+  workoutId  String
+  exerciseId String
+  sortOrder  Int     @default(0)
+  notes      String?
+
+  workout  Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise      @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  sets     ExerciseSet[]
+
+  @@index([workoutId])
+}
+
+model ExerciseSet {
+  id                String  @id @default(cuid())
+  workoutExerciseId String
+  setNumber         Int
+  reps              Int?
+  weightKg          Float?
+  durationSec       Int?
+  distanceM         Float?
+  completed         Boolean @default(true)
+  notes             String?
+
+  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([workoutExerciseId])
+}
+
+// ---------------------------------------------------------------- check-in
+
+model DailyCheckIn {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  energy    Int?
+  hunger    Int?
+  sleep     Int?
+  mood      Int?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// ---------------------------------------------------------------- tiny wins
+
+enum HabitCompletionStatus {
+  DONE
+  TINY
+  SKIPPED
+}
+
+model Habit {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String
+  identityStatement String?
+  cue               String?
+  stack             String?
+  goalLabel         String?
+  tinyGoalLabel     String?
+  scheduleDays      Int[]    @default([0, 1, 2, 3, 4, 5, 6])
+  reminderEnabled   Boolean  @default(false)
+  reminderTime      String?
+  notes             String?
+  active            Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions HabitCompletion[]
+
+  @@index([userId, active])
+}
+
+model HabitCompletion {
+  id          String                @id @default(cuid())
+  habitId     String
+  date        DateTime              @db.Date
+  status      HabitCompletionStatus @default(DONE)
+  completedAt DateTime              @default(now())
+  note        String?
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([date])
+}
+
+enum StackTrigger {
+  WEIGHT_LOGGED
+  WATER_LOGGED
+  WALK_LOGGED
+  FAST_STARTED
+  FAST_ENDED
+  ELECTROLYTES_LOGGED
+  CHECKIN_LOGGED
+}
+
+enum StackTarget {
+  WATER_LOGGED
+  WALK_LOGGED
+  ELECTROLYTES_LOGGED
+  WEIGHT_LOGGED
+  HABIT_COMPLETED
+}
+
+model HabitStackRule {
+  id            String       @id @default(cuid())
+  userId        String
+  name          String
+  trigger       StackTrigger
+  target        StackTarget
+  withinMinutes Int          @default(30)
+  message       String
+  enabled       Boolean      @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------- pop pact
+
+enum PopPactEventType {
+  SLIP
+  CRAVING_RESISTED
+  DISTRACTION_USED
+  MILESTONE
+  NOTE
+}
+
+model PopPact {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  title             String   @default("The Pop Pact")
+  startDate         DateTime @db.Date
+  streakStart       DateTime @db.Date
+  reason            String
+  longestStreakDays Int      @default(0)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events  PopPactEvent[]
+  reasons PopPactReason[]
+}
+
+model PopPactEvent {
+  id         String           @id @default(cuid())
+  pactId     String
+  type       PopPactEventType
+  occurredAt DateTime         @default(now())
+  note       String?
+  meta       Json?
+
+  pact PopPact @relation(fields: [pactId], references: [id], onDelete: Cascade)
+
+  @@index([pactId, occurredAt])
+}
+
+model PopPactReason {
+  id        String @id @default(cuid())
+  pactId    String
+  text      String
+  sortOrder Int    @default(0)
+
+  pact PopPact @relation(fields: [pactId], references: [id], onDelete: Cascade)
+
+  @@index([pactId])
+}
+
+model Achievement {
+  id         String   @id @default(cuid())
+  userId     String
+  key        String
+  category   String
+  label      String
+  unlockedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}
+
+// ---------------------------------------------------------------- notifications
+
+enum NotificationPersonality {
+  PROFESSIONAL
+  FRIENDLY
+  DAD_JOKES
+  UNHINGED
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  enabled     Boolean                 @default(false)
+  nagLevel    Int                     @default(2) // 1 Gentle .. 5 Absolutely Unhinged
+  personality NotificationPersonality @default(FRIENDLY)
+
+  quietStart String @default("21:30")
+  quietEnd   String @default("07:00")
+
+  waterEnabled         Boolean @default(true)
+  waterIntervalMinutes Int     @default(60)
+  waterWindowStart     String  @default("07:00")
+  waterWindowEnd       String  @default("20:00")
+  waterIdleMinutes     Int     @default(60)
+  waterStopAfterGoal   Boolean @default(true)
+
+  popEnabled Boolean @default(true)
+  popTime    String  @default("09:00")
+
+  moveEnabled Boolean @default(true)
+  moveTime    String  @default("16:00")
+
+  fastMilestonesEnabled Boolean @default(true)
+  habitStackEnabled     Boolean @default(true)
+
+  eveningCheckEnabled Boolean @default(true)
+  eveningCheckTime    String  @default("21:00")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id            String    @id @default(cuid())
+  userId        String
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  lastSuccessAt DateTime?
+  failureCount  Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  title     String
+  body      String
+  url       String?
+  sentAt    DateTime @default(now())
+  dedupeKey String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, sentAt])
+}
+
+// ---------------------------------------------------------------- timeline
+
+enum TimelineType {
+  WATER
+  ELECTROLYTES
+  WEIGHT
+  WALK
+  STEPS
+  WORKOUT
+  FAST_START
+  FAST_END
+  FAST_MILESTONE
+  CHECKIN
+  HABIT
+  POP_PACT
+  MEASUREMENT
+  REFEED
+  ACHIEVEMENT
+}
+
+model TimelineEvent {
+  id         String       @id @default(cuid())
+  userId     String
+  type       TimelineType
+  occurredAt DateTime
+  title      String
+  detail     String?
+  refId      String?
+  meta       Json?
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([type, refId])
+}

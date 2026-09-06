@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="ffbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#17253C"/>
+      <stop offset="100%" stop-color="#0B1421"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="115" fill="url(#ffbg)"/>
+  <rect x="5" y="5" width="502" height="502" rx="110" fill="none" stroke="#4D8DFF" stroke-opacity="0.4" stroke-width="7"/>
+
+  <g transform="translate(72 168) skewX(-14) scale(0.86)">
+    <!-- speed lines -->
+    <g>
+      <rect x="-34" y="34" width="150" height="26" rx="13" fill="#C7F43D"/>
+      <rect x="-46" y="94" width="120" height="26" rx="13" fill="#4D8DFF"/>
+      <rect x="-34" y="154" width="150" height="26" rx="13" fill="#C7F43D"/>
+    </g>
+    <!-- F -->
+    <path d="M96 0 H232 V50 H150 V88 H216 V136 H150 V224 H96 Z" fill="#C7F43D"/>
+    <!-- F -->
+    <path d="M262 0 H398 V50 H316 V88 H382 V136 H316 V224 H262 Z" fill="#C7F43D"/>
+    <!-- arrow -->
+    <path d="M416 6 L534 112 L416 218 Z" fill="#C7F43D"/>
+  </g>
+</svg>
