@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sheet, ConfirmDialog } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
@@ -43,7 +43,9 @@ export function FamilySettings({
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<Member | null>(null);
   const [newCode, setNewCode] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const nameInput = useRef<HTMLInputElement>(null);
 
   async function post(body: Record<string, unknown>, success?: string) {
     setBusy(true);
@@ -65,13 +67,21 @@ export function FamilySettings({
 
   async function createInvite() {
     if (!form.name.trim()) {
-      toast('Who is it for?', 'error');
+      // Show the error *at* the field and bring it back into view — the form is
+      // taller than a phone screen, so a floating toast can refer to something
+      // the user has scrolled past.
+      setNameError('Who is this invite for?');
+      nameInput.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      nameInput.current?.focus({ preventScroll: true });
       return;
     }
-    const data = await post(
-      { action: 'invite', name: form.name.trim(), email: form.email || undefined, role: form.role },
-      'Invite created'
-    );
+    setNameError(null);
+    const data = await post({
+      action: 'invite',
+      name: form.name.trim(),
+      email: form.email || undefined,
+      role: form.role,
+    });
     if (data?.code) {
       setNewCode(data.code);
       setForm({ name: '', email: '', role: 'FAMILY_VIEWER' });
@@ -190,6 +200,7 @@ export function FamilySettings({
         onClose={() => {
           setInviteOpen(false);
           setNewCode(null);
+          setNameError(null);
         }}
         title="Invite family member"
       >
@@ -215,13 +226,28 @@ export function FamilySettings({
         ) : (
           <div className="space-y-3">
             <div>
-              <label className="ff-label mb-1.5 block">Their name</label>
+              <label htmlFor="invite-name" className="ff-label mb-1.5 block">
+                Their name
+              </label>
               <input
-                className="ff-input"
+                id="invite-name"
+                ref={nameInput}
+                className={`ff-input ${nameError ? 'border-coral focus:border-coral focus:ring-coral/20' : ''}`}
                 placeholder="Brittnee"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                autoFocus
+                aria-invalid={nameError ? true : undefined}
+                aria-describedby={nameError ? 'invite-name-error' : undefined}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  if (nameError) setNameError(null);
+                }}
               />
+              {nameError ? (
+                <p id="invite-name-error" className="mt-1.5 text-xs font-semibold text-coral">
+                  {nameError}
+                </p>
+              ) : null}
             </div>
             <div>
               <label className="ff-label mb-1.5 block">Email (optional)</label>
