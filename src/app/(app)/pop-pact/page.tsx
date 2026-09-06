@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getContext } from '@/lib/context';
 import { getOrCreatePact, streakDays, nextMilestone, earnedMilestones, totalDaysSinceStart } from '@/lib/poppact';
+import { unlockAchievement } from '@/lib/achievements';
 import { formatDate } from '@/lib/dates';
 import { PageHeader } from '@/components/PageHeader';
 import { PopPactView } from '@/components/pop/PopPactView';
@@ -17,6 +18,16 @@ export default async function PopPactPage() {
   ]);
 
   const days = streakDays(pact, ctx.timezone);
+
+  // Idempotent — records any milestone the streak has already earned.
+  for (const milestone of earnedMilestones(days)) {
+    await unlockAchievement({
+      userId: ctx.user.id,
+      key: milestone.key,
+      category: 'pop_pact',
+      label: milestone.label,
+    });
+  }
 
   return (
     <>

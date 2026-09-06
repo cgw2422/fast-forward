@@ -1,7 +1,7 @@
 import 'server-only';
 import { prisma } from './prisma';
 import { sendOnce, sendToUser, pushConfigured } from './push';
-import { dayRange, isWithinWindow, minutesOfDay, parseHHMM, todayKey, ymd, formatTime } from './dates';
+import { dayRange, isWithinWindow, minutesOfDay, parseHHMM, todayKey, weekdayIndex, ymd, formatTime } from './dates';
 import { formatVolume, formatDurationShort, mlToDisplay } from './units';
 import {
   waterReminderBody,
@@ -14,7 +14,8 @@ import {
   type NagLevel,
   type Personality,
 } from './copy';
-import { streakDays } from './poppact';
+import { streakDays, earnedMilestones } from './poppact';
+import { unlockAchievement } from './achievements';
 import { evaluateWaterReminder } from './water-logic';
 
 /* ------------------------------------------------------------------ helpers */
@@ -283,6 +284,70 @@ export async function runReminderTick(now = new Date()): Promise<TickResult> {
     if (pref.habitStackEnabled && !quiet) {
       const sentStacks = await evaluateHabitStacks(user.id, tz, day, now);
       result.sent += sentStacks;
+    }
+
+    /* ------------------------------------------------ habit reminders */
+    const habits = await prisma.habit.findMany({
+      where: { userId: user.id, active: true, reminderEnabled: true, reminderTime: { not: null } },
+    });
+    if (habits.length > 0 && !quiet) {
+      const todayDate = todayKey(tz);
+      const dow = weekdayIndex(now, tz);
+
+      for (const habit of habits) {
+        if (!habit.scheduleDays.includes(dow)) continue;
+        if (!timeHasPassed(now, tz, habit.reminderTime as string)) continue;
+
+        // Already voted today — nothing to nudge about.
+        const done = await prisma.habitCompletion.findUnique({
+          where: { habitId_date: { habitId: habit.id, date: todayDate } },
+        });
+        if (done && done.status !== 'SKIPPED') continue;
+
+        // Late in the day, offer the minimum version rather than the full goal.
+        const lateInDay = nowMinutes >= 18 * 60;
+        const body =
+          lateInDay && habit.tinyGoalLabel
+            ? `Not feeling the whole thing? ${habit.tinyGoalLabel} still counts.`
+            : habit.goalLabel
+              ? `${habit.goalLabel} — one vote for the person you're becoming.`
+              : 'One vote for the person you\'re becoming.';
+
+        const sent = await sendOnce(user.id, `habit:${habit.id}:${day}`, {
+          kind: 'habit',
+          title: habit.name,
+          body,
+          url: '/habits',
+          tag: `ff-habit-${habit.id}`,
+        });
+        if (sent) {
+          result.sent += 1;
+          result.details.push(`habit ${habit.name} -> ${user.email}`);
+        }
+      }
+    }
+
+    /* ------------------------------------------ pop pact milestones */
+    if (user.popPact) {
+      const days = streakDays(user.popPact, tz);
+      for (const milestone of earnedMilestones(days)) {
+        const label = await unlockAchievement({
+          userId: user.id,
+          key: milestone.key,
+          category: 'pop_pact',
+          label: milestone.label,
+        });
+        if (label && !quiet) {
+          const sent = await sendOnce(user.id, `pop_milestone:${milestone.key}`, {
+            kind: 'pop_milestone',
+            title: label,
+            body: `${milestone.days} days pop-free. Promise kept.`,
+            url: '/pop-pact',
+            tag: 'ff-pop-milestone',
+          });
+          if (sent) result.sent += 1;
+        }
+      }
     }
 
     /* ------------------------------------------------- evening recap */
